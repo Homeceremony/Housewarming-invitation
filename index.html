@@ -3,39 +3,92 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="content-type" content="text/html;charset=UTF-8">
-  <title>Quote Form</title>
+  <title>Get Quote Popup</title>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #fff; }
+    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f0f4f8; }
+    .get-quote-btn {
+      background: linear-gradient(0deg, #0279FF 0%, #00A3F3 100%);
+      color: #fff; border: none; padding: 12px 28px;
+      font-size: 16px; border-radius: 6px; cursor: pointer;
+    }
 
+    /* ── Overlay ── */
+    #quoteOverlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 9998;
+      justify-content: center; align-items: center;
+    }
+    #quoteOverlay.active { display: flex; }
+
+    /* ── Modal ── */
+    #quoteModal {
+      background: #fff; border-radius: 8px;
+      width: 95%; max-width: 750px;
+      max-height: 90vh; overflow-y: auto;
+      position: relative; z-index: 9999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+
+    /* ── Header ── */
+    .modal-header {
+      background: linear-gradient(0deg, #0279FF 0%, #00A3F3 100%);
+      color: #fff; padding: 16px 20px;
+      border-radius: 8px 8px 0 0;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .modal-header h2 { margin: 0; font-size: 18px; font-family: Arial; }
+    .modal-close { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; line-height: 1; }
+
+    /* ── Form wrapper ── */
+    .form-body { padding: 24px 28px; }
+
+    /* ── 2-column grid ── */
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px 20px;
+      gap: 16px 24px;
     }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
     .form-group.full-width { grid-column: 1 / -1; }
 
-    .form-group label { font-size: 12px; font-family: Arial; color: #313949; font-weight: 600; }
+    .form-group label {
+      font-size: 12px; font-family: Arial;
+      color: #313949; font-weight: 600;
+    }
     .form-group label span { color: red; }
 
     .form-group input[type=text],
-    .form-group textarea {
-      width: 100%; border: 1px solid #c0c6cc;
-      border-radius: 4px; padding: 7px 10px;
-      font-size: 13px; font-family: Arial; outline: none;
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      border: 1px solid #c0c6cc;
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: Arial;
+      box-sizing: border-box;
+      outline: none;
       transition: border-color 0.2s;
     }
     .form-group input[type=text]:focus,
-    .form-group textarea:focus { border-color: #0279FF; }
-    .form-group textarea { resize: vertical; min-height: 75px; }
+    .form-group textarea:focus,
+    .form-group select:focus { border-color: #0279FF; }
 
-    .captcha-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-    .captcha-row input { width: 150px; }
-    .captcha-row img { height: 38px; border-radius: 4px; border: 1px solid #c0c6cc; }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* ── Captcha row ── */
+    .captcha-row {
+      display: flex; align-items: center; gap: 16px;
+      margin-top: 4px; flex-wrap: wrap;
+    }
+    .captcha-row input { width: 160px; }
+    .captcha-row img { height: 40px; border-radius: 4px; border: 1px solid #c0c6cc; }
     .captcha-row a { font-size: 12px; color: #0279FF; text-decoration: none; }
+    .captcha-row a:hover { text-decoration: underline; }
 
-    .btn-row { display: flex; gap: 10px; margin-top: 18px; }
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
     .btn-submit {
       background: linear-gradient(0deg, #0279FF 0%, #00A3F3 100%);
       color: #fff; border: none; padding: 9px 28px;
@@ -43,137 +96,203 @@
     }
     .btn-submit:hover { background: linear-gradient(#02acff 0, #006be4 100%); }
     .btn-reset {
-      background: #fff; color: #313949; border: 1px solid #c0c6cc;
-      padding: 9px 20px; border-radius: 4px; font-size: 13px; cursor: pointer;
+      background: #fff; color: #313949;
+      border: 1px solid #c0c6cc; padding: 9px 20px;
+      border-radius: 4px; font-size: 13px; cursor: pointer;
     }
+    .btn-reset:hover { background: #f5f5f5; }
 
-    @media (max-width: 500px) {
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
       .form-grid { grid-template-columns: 1fr; }
       .form-group.full-width { grid-column: 1; }
+      .form-body { padding: 16px; }
     }
   </style>
 </head>
 <body>
 
-  <form id="webform533235000001855020"
-        action="https://crm.zoho.in/crm/WebToLeadForm"
-        name="WebToLeads533235000001855020"
-        method="POST"
-        onsubmit="javascript:document.charset='UTF-8'; return checkMandatory533235000001855020()"
-        accept-charset="UTF-8">
+  <!-- Demo button (replace with your existing button + onclick) -->
+  <button class="get-quote-btn" onclick="openQuotePopup()">Get Quote</button>
 
-    <!-- Zoho security fields (DO NOT REMOVE) -->
-    <input type="text" style="display:none;" name="xnQsjsdp" value="6710b7bf1367dfd7e07dd863192906142373a07287d779a2dea5149ad7c0355a">
-    <input type="hidden" name="zc_gad" id="zc_gad" value="">
-    <input type="text" style="display:none;" name="xmIwtLD" value="30226947c3e8df6d3929f9fc54d85f580e3a4d5960f81fbcd325f101a0d28afb02f33b311667bce6da3ac7c35a95b949">
-    <input type="text" style="display:none;" name="actionType" value="TGVhZHM=">
-    <input type="text" style="display:none;" name="returnURL" value="https&#x3a;&#x2f;&#x2f;elitefurnaces.com&#x2f;thankyou">
+  <!-- ══ OVERLAY + MODAL ══ -->
+  <div id="quoteOverlay" onclick="closeOnOverlay(event)">
+    <div id="quoteModal">
 
-    <!-- Auto-filled hidden fields -->
-    <input type="hidden" id="LEADCF11" name="LEADCF11" value="">
-    <input type="hidden" id="pageURL" name="Fax" value="">
-
-    <!-- Lead Source hidden (DO NOT REMOVE) -->
-    <select style="display:none;" name="Lead Source" id="Lead_Source">
-      <option value="-None-">-None-</option>
-      <option selected value="Contact&#x20;Us">Contact Us</option>
-      <option value="Advertisement">Advertisement</option>
-      <option value="Facebook">Facebook</option>
-      <option value="Web&#x20;Research">Web Research</option>
-    </select>
-
-    <!-- 2-Column Grid -->
-    <div class="form-grid">
-
-      <div class="form-group">
-        <label for="First_Name">First Name <span>*</span></label>
-        <input type="text" id="First_Name" name="First Name" aria-required="true" maxlength="40">
-      </div>
-      <div class="form-group">
-        <label for="Last_Name">Last Name <span>*</span></label>
-        <input type="text" id="Last_Name" name="Last Name" aria-required="true" maxlength="80">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2>Get a Quote</h2>
+        <button class="modal-close" onclick="closeQuotePopup()" aria-label="Close">&times;</button>
       </div>
 
-      <div class="form-group">
-        <label for="Company">Company <span>*</span></label>
-        <input type="text" id="Company" name="Company" aria-required="true" maxlength="200">
-      </div>
-      <div class="form-group">
-        <label for="Website">Designation <span>*</span></label>
-        <input type="text" id="Website" name="Website" aria-required="true" maxlength="255">
-      </div>
+      <!-- Form Body -->
+      <div class="form-body">
+        <form id="webform533235000001855020"
+              action="https://crm.zoho.in/crm/WebToLeadForm"
+              name="WebToLeads533235000001855020"
+              method="POST"
+              onsubmit="javascript:document.charset='UTF-8'; return checkMandatory533235000001855020()"
+              accept-charset="UTF-8">
 
-      <div class="form-group">
-        <label for="Email">Email <span>*</span></label>
-        <input type="text" ftype="email" autocomplete="false" id="Email" name="Email" aria-required="true" maxlength="100">
-      </div>
-      <div class="form-group">
-        <label for="Mobile">Phone Number <span>*</span></label>
-        <input type="text" id="Mobile" name="Mobile" aria-required="true" maxlength="30">
-      </div>
+          <!-- Zoho hidden/security fields (DO NOT REMOVE) -->
+          <input type="text" style="display:none;" name="xnQsjsdp" value="6710b7bf1367dfd7e07dd863192906142373a07287d779a2dea5149ad7c0355a">
+          <input type="hidden" name="zc_gad" id="zc_gad" value="">
+          <input type="text" style="display:none;" name="xmIwtLD" value="30226947c3e8df6d3929f9fc54d85f580e3a4d5960f81fbcd325f101a0d28afb02f33b311667bce6da3ac7c35a95b949">
+          <input type="text" style="display:none;" name="actionType" value="TGVhZHM=">
+          <input type="text" style="display:none;" name="returnURL" value="https&#x3a;&#x2f;&#x2f;elitefurnaces.com&#x2f;thankyou">
 
-      <div class="form-group">
-        <label for="Designation">Product <span>*</span></label>
-        <input type="text" id="Designation" name="Designation" aria-required="true" maxlength="100">
-      </div>
-      <div class="form-group">
-        <label for="City">City <span>*</span></label>
-        <input type="text" id="City" name="City" aria-required="true" maxlength="100">
-      </div>
+          <!-- Auto-filled hidden fields -->
+          <input type="hidden" id="LEADCF11" name="LEADCF11" value="">
+          <input type="hidden" id="pageURL" name="Fax" value="">
 
-      <div class="form-group full-width">
-        <label for="Street">Street <span>*</span></label>
-        <input type="text" id="Street" name="Street" aria-required="true" maxlength="250">
-      </div>
+          <!-- Lead Source hidden (DO NOT REMOVE) -->
+          <select style="display:none;" name="Lead Source" id="Lead_Source">
+            <option value="-None-">-None-</option>
+            <option value="Advertisement">Advertisement</option>
+            <option value="Analytica&#x20;2024">Analytica 2024</option>
+            <option value="Analytica&#x20;Lab&#x20;Africa&#x20;8th&#x20;to&#x20;10th&#x20;July,&#x20;2025">Analytica Lab Africa 8th to 10th July, 2025</option>
+            <option value="ArabLab&#x20;2023">ArabLab 2023</option>
+            <option value="Chat">Chat</option>
+            <option value="Cold&#x20;Call">Cold Call</option>
+            <option selected value="Contact&#x20;Us">Contact Us</option>
+            <option value="Dealer&#x20;&#x2f;&#x20;Distributor">Dealer / Distributor</option>
+            <option value="Email">Email</option>
+            <option value="Employee&#x20;Referral">Employee Referral</option>
+            <option value="External&#x20;Referral">External Referral</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Internal&#x20;Seminar">Internal Seminar</option>
+            <option value="Online&#x20;Store">Online Store</option>
+            <option value="Partner">Partner</option>
+            <option value="Public&#x20;Relations">Public Relations</option>
+            <option value="Service&#x20;Visit">Service Visit</option>
+            <option value="Trade&#x20;Show">Trade Show</option>
+            <option value="Twitter">Twitter</option>
+            <option value="Web&#x20;Download">Web Download</option>
+            <option value="Web&#x20;Research">Web Research</option>
+          </select>
 
-      <div class="form-group full-width">
-        <label for="Description">Description <span>*</span></label>
-        <textarea id="Description" name="Description" aria-required="true"></textarea>
-      </div>
+          <!-- ── 2-Column Grid Fields ── -->
+          <div class="form-grid">
 
-      <!-- Captcha (DO NOT REMOVE) -->
-      <div class="form-group full-width">
-        <label id="reCaptchaField">Enter the Captcha</label>
-        <div class="captcha-row">
-          <input type="text" id="captchaField533235000001855020" aria-labelledby="reCaptchaField" maxlength="10" name="enterdigest"/>
-          <img id="imgid533235000001855020"
-               src="https://crm.zoho.in/crm/CaptchaServlet?formId=30226947c3e8df6d3929f9fc54d85f580e3a4d5960f81fbcd325f101a0d28afb02f33b311667bce6da3ac7c35a95b949&grpid=6710b7bf1367dfd7e07dd863192906142373a07287d779a2dea5149ad7c0355a">
-          <a href="javascript:;" onclick="reloadImg533235000001855020();">&#x21bb; Reload</a>
-        </div>
-      </div>
+            <!-- Row 1: First Name | Last Name -->
+            <div class="form-group">
+              <label for="First_Name">First Name <span>*</span></label>
+              <input type="text" id="First_Name" name="First Name" aria-required="true" maxlength="40">
+            </div>
+            <div class="form-group">
+              <label for="Last_Name">Last Name <span>*</span></label>
+              <input type="text" id="Last_Name" name="Last Name" aria-required="true" maxlength="80">
+            </div>
 
-    </div><!-- end form-grid -->
+            <!-- Row 2: Company | Designation -->
+            <div class="form-group">
+              <label for="Company">Company <span>*</span></label>
+              <input type="text" id="Company" name="Company" aria-required="true" maxlength="200">
+            </div>
+            <div class="form-group">
+              <label for="Website">Designation <span>*</span></label>
+              <input type="text" id="Website" name="Website" aria-required="true" maxlength="255">
+            </div>
 
-    <input type="text" style="display:none;" name="aG9uZXlwb3Q" value=""/>
+            <!-- Row 3: Email | Phone -->
+            <div class="form-group">
+              <label for="Email">Email <span>*</span></label>
+              <input type="text" ftype="email" autocomplete="false" id="Email" name="Email" aria-required="true" maxlength="100">
+            </div>
+            <div class="form-group">
+              <label for="Mobile">Phone Number <span>*</span></label>
+              <input type="text" id="Mobile" name="Mobile" aria-required="true" maxlength="30">
+            </div>
 
-    <div class="btn-row">
-      <input type="submit" id="formsubmit" role="button" class="btn-submit formsubmit zcwf_button" value="Submit" aria-label="Submit">
-      <input type="reset" role="button" class="btn-reset zcwf_button" name="reset" value="Reset" aria-label="Reset">
-    </div>
+            <!-- Row 4: Product | City -->
+            <div class="form-group">
+              <label for="Designation">Product <span>*</span></label>
+              <input type="text" id="Designation" name="Designation" aria-required="true" maxlength="100">
+            </div>
+            <div class="form-group">
+              <label for="City">City <span>*</span></label>
+              <input type="text" id="City" name="City" aria-required="true" maxlength="100">
+            </div>
 
-  </form>
+            <!-- Row 5: Street (full width) -->
+            <div class="form-group full-width">
+              <label for="Street">Street <span>*</span></label>
+              <input type="text" id="Street" name="Street" aria-required="true" maxlength="250">
+            </div>
+
+            <!-- Row 6: Description (full width) -->
+            <div class="form-group full-width">
+              <label for="Description">Description <span>*</span></label>
+              <textarea id="Description" name="Description" aria-required="true"></textarea>
+            </div>
+
+            <!-- Row 7: Captcha (full width) -->
+            <div class="form-group full-width">
+              <label id="reCaptchaField">Enter the Captcha</label>
+              <div class="captcha-row">
+                <input type="text" id="captchaField533235000001855020" aria-labelledby="reCaptchaField" maxlength="10" name="enterdigest"/>
+                <img id="imgid533235000001855020"
+                     src="https://crm.zoho.in/crm/CaptchaServlet?formId=30226947c3e8df6d3929f9fc54d85f580e3a4d5960f81fbcd325f101a0d28afb02f33b311667bce6da3ac7c35a95b949&grpid=6710b7bf1367dfd7e07dd863192906142373a07287d779a2dea5149ad7c0355a">
+                <a href="javascript:;" onclick="reloadImg533235000001855020();">&#x21bb; Reload</a>
+              </div>
+            </div>
+
+          </div><!-- end form-grid -->
+
+          <input type="text" style="display:none;" name="aG9uZXlwb3Q" value=""/>
+
+          <!-- Submit / Reset -->
+          <div class="btn-row">
+            <input type="submit" id="formsubmit" role="button" class="btn-submit formsubmit zcwf_button" value="Submit" aria-label="Submit">
+            <input type="reset" role="button" class="btn-reset zcwf_button" name="reset" value="Reset" aria-label="Reset">
+          </div>
+
+        </form>
+      </div><!-- end form-body -->
+    </div><!-- end quoteModal -->
+  </div><!-- end quoteOverlay -->
 
   <!-- Zoho Analytics (DO NOT REMOVE) -->
   <script id="wf_anal" src="https://crm.zohopublic.in/crm/WebFormAnalyticsServeServlet?rid=5e3fe14d6897d4c983787b3c2b39eaa8ed31ddd07bd897a15f62d39596b7cb51ca0f9809c4fe6d9aa8fdaa2f676f6a57gidef33b26453aae73c9fc3665c71e3448c43bca56708071a0bec0687f7935c074bgidff0fc3081b0ebb19b8f1333184d1bbb0a31c6aad2a2a1c84a6d3a42a90eff41fgid93482992fa620cc5ba30098c9694e6223a7c278f18b0cf8f0a11213b00fc8c14&tw=50938beda51feac512a3e00d3acba517c0113363b85936503bd49d304bada8d6"></script>
 
   <script>
-    // Read product name and page URL from URL parameters
-    (function() {
-      var params = new URLSearchParams(window.location.search);
-      var product = params.get('product') || '';
-      var url = params.get('url') || '';
-      document.getElementById('LEADCF11').value = decodeURIComponent(product);
-      document.getElementById('pageURL').value = decodeURIComponent(url);
-    })();
+    // ── Product name (change per product page) ──
+    var PRODUCT_NAME = "Economy Chamber Furnaces - 1100°C Maximum";
 
+    function openQuotePopup() {
+      document.getElementById('LEADCF11').value = PRODUCT_NAME;
+      document.getElementById('pageURL').value = window.location.href;
+      document.getElementById('quoteOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeQuotePopup() {
+      document.getElementById('quoteOverlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    function closeOnOverlay(e) {
+      if (e.target === document.getElementById('quoteOverlay')) closeQuotePopup();
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeQuotePopup();
+    });
+
+    // Zoho scripts (DO NOT REMOVE)
+    function addAriaSelected533235000001855020(){
+      var optionElem = event.target;
+      var prev = optionElem.querySelector('[aria-selected=true]');
+      if (prev) prev.removeAttribute('aria-selected');
+      optionElem.querySelectorAll('option')[optionElem.selectedIndex].ariaSelected = 'true';
+    }
     function reloadImg533235000001855020(){
       var captcha = document.getElementById('imgid533235000001855020');
-      captcha.src = captcha.src.indexOf('&d') !== -1
-        ? captcha.src.substring(0, captcha.src.indexOf('&d')) + '&d' + new Date().getTime()
-        : captcha.src + '&d' + new Date().getTime();
+      if (captcha.src.indexOf('&d') !== -1) {
+        captcha.src = captcha.src.substring(0, captcha.src.indexOf('&d')) + '&d' + new Date().getTime();
+      } else {
+        captcha.src = captcha.src + '&d' + new Date().getTime();
+      }
     }
     function historyBack533235000001855020(){
-      document.querySelector('.formsubmit').removeAttribute('disabled');
+      document.querySelector('.crmWebToEntityForm .formsubmit').removeAttribute('disabled');
       reloadImg533235000001855020();
       window.removeEventListener('focus', historyBack533235000001855020);
     }
@@ -195,15 +314,20 @@
       return true;
     }
     function checkMandatory533235000001855020(){
-      var mndFileds = ['Company','First Name','Last Name','Designation','Email','Mobile','Website','Street','City','Description'];
-      var fldLangVal = ['Company','First Name','Last Name','Product','Email','Phone Number','Designation','Street','City','Description'];
+      var mndFileds = new Array('Company','First Name','Last Name','Designation','Email','Mobile','Website','Street','City','Description');
+      var fldLangVal = new Array('Company','First\x20Name','Last\x20Name','Product','Email','Phone\x20Number','Designation','Street','City','Description');
       for (var i = 0; i < mndFileds.length; i++) {
         var fieldObj = document.forms['WebToLeads533235000001855020'][mndFileds[i]];
         if (fieldObj) {
           if (((fieldObj.value).replace(/^\s+|\s+$/g,'')).length == 0) {
+            if (fieldObj.type == 'file') { alert('Please select a file to upload.'); fieldObj.focus(); return false; }
             alert(fldLangVal[i] + ' cannot be empty.');
             fieldObj.focus();
             return false;
+          } else if (fieldObj.nodeName == 'SELECT') {
+            if (fieldObj.options[fieldObj.selectedIndex].value == '-None-') { alert(fldLangVal[i] + ' cannot be none.'); fieldObj.focus(); return false; }
+          } else if (fieldObj.type == 'checkbox') {
+            if (fieldObj.checked == false) { alert('Please accept ' + fldLangVal[i]); fieldObj.focus(); return false; }
           }
           try { if (fieldObj.name == 'Last Name') { name = fieldObj.value; } } catch(e){}
         }
